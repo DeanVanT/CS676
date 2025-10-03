@@ -394,9 +394,9 @@ def aggregate_scores(result_credibility, result_fact_check, result_citations):
     """
     # Define weights for each score component
     weights = {
-        'credibility': 0.3,
+        'credibility': 0.35,
         'fact_check': 0.35,
-        'citations': 0.2
+        'citations': 0.3
     }
     
     # Extract scores
