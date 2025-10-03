@@ -1,7 +1,37 @@
 # Credibility Scoring: Technical Report (Brief)
 
-## Objective
-Summarize the algorithmic approach and research behind the credibility scoring system. Provide a concise roadmap for future improvements.
+## Overview
+Using a hybrid approach. This scrip was a rebuild on the first pracital data science project. Improvments were implementing a user prompt for URL and a checker to validate website and incorporating a qualitative tranche and json type output as required by project instructions. 
+* `evaluate_citations()` is mostly unchanged and just adds to hybrid model.   
+* `evaluate_fact_check` was updated to include not just medical sites, but a more expansive list to cover a more generic URL credibility vs just a medical focused list.
+* `evaluate_reference_credibility` Rebuilt cleaner, more robust, and correctly interprets model outputs. Comparison to V1 below:
+
+## Differences
+
+- Error handling:  
+  - V1: One generic try/except.  
+  - V2: Separate handling for init, fetch, and inference errors.
+
+- Text extraction:  
+  - V1: Uses `soup.get_text()` (messy, often includes junk).  
+  - V2: Uses `stripped_strings` (clean, visible text only).
+
+- HTTP requests:  
+  - V1: No headers, short timeout.  
+  - V2: Custom `User-Agent`, longer timeout — avoids blocks and timeouts.
+
+- Model label handling:  
+  - V1: Assumes class `1` is “reliable”.  
+  - V2: Searches for `"REAL"` or `"TRUE"` in labels — works across different model configs.
+
+- Scoring logic:  
+  - V1: Arbitrary mix of base score + model output.  
+  - V2: Returns actual model softmax probability.
+
+- Output meaning:  
+  - V1: Rough heuristic, partially hardcoded.  
+  - V2: True confidence probability from the classifier.
+
 
 ## Algorithm & Rationale
 - Combines ML (BERT-based fake news classifier) and rule-based heuristics.
