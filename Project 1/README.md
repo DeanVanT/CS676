@@ -1,6 +1,15 @@
-# URL Credibility Checker Chatbot
+# URL Credibility Checker AI Chatbot
 
-A Streamlit-based chatbot that analyzes URL credibility using machine learning and domain reputation analysis.
+An **intelligent Streamlit chatbot** that analyzes URL credibility using machine learning, domain reputation analysis, and conversational AI. Now with natural language understanding, multi-URL comparison, and educational capabilities!
+
+## 🆕 New Features
+
+- 💬 **Natural Conversations**: Chat naturally with greetings, questions, and follow-ups
+- 📊 **Multi-URL Comparison**: Analyze and compare multiple sources side-by-side
+- 🎓 **Educational Mode**: Learn about credibility, fact-checking, and information literacy
+- 🧠 **Context Memory**: Remembers your session history and previous analyses
+- 📈 **Session Statistics**: Track your analysis history and credibility rates
+- 🤖 **Intent Detection**: Automatically understands what you're asking for
 
 ## Features
 
@@ -38,6 +47,44 @@ streamlit run app.py
 
 The app will open in your browser at `http://localhost:8501`
 
+### Example Interactions
+
+**Analyze a single URL:**
+```
+User: Check https://www.nature.com
+Bot: [Analyzes and shows credibility score]
+```
+
+**Compare multiple URLs:**
+```
+User: Compare cdc.gov vs example.com
+Bot: [Shows side-by-side comparison with rankings]
+```
+
+**Ask educational questions:**
+```
+User: How do you score URLs?
+Bot: [Explains methodology in detail]
+
+User: What makes a source credible?
+Bot: [Provides educational content]
+```
+
+**Natural conversation:**
+```
+User: Hello!
+Bot: [Friendly greeting with instructions]
+
+User: Thanks!
+Bot: [Acknowledgment]
+```
+
+**Follow-up questions:**
+```
+User: Why did that site get a low score?
+Bot: [Explains the previous analysis in detail]
+```
+
 ### Running CLI Version
 
 ```powershell
@@ -48,14 +95,26 @@ python deliverable1-3.py
 
 ```
 Project 1/
-├── app.py                 # Streamlit chatbot interface
-├── deliverable1-3.py      # Optimized credibility analysis module
-├── deliverable1.py        # Original implementation (DO NOT MODIFY)
-├── requirements.txt       # Python dependencies
-└── README.md             # This file
+├── app.py                    # Enhanced Streamlit chatbot with conversational AI
+├── conversational_ai.py      # Intent detection and conversational responses
+├── deliverable1_3.py         # Optimized credibility analysis module
+├── deliverable1.py           # Original implementation (DO NOT MODIFY)
+├── requirements.txt          # Python dependencies
+└── README.md                 # This file
 ```
 
 ## How It Works
+
+### Conversational AI Layer
+
+The bot uses **rule-based intent detection** (100% free, no API keys) to understand:
+- **Analyze**: URLs to check for credibility
+- **Compare**: Multiple URLs to rank by credibility  
+- **Educate**: Questions about methodology and credibility
+- **Chat**: Greetings, thanks, and general conversation
+- **Follow-up**: Questions about previous analyses
+
+### Credibility Analysis
 
 The system evaluates URLs across three dimensions:
 
