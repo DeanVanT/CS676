@@ -1,0 +1,16 @@
+# URL Credibility Checker - Python Dependencies
+# Use with: uv pip install -r requirements.txt
+
+# Web Framework
+streamlit>=1.28.0
+
+# ML/AI Libraries
+transformers>=4.35.0
+torch>=2.1.0
+
+# Web Scraping & HTTP
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# Utilities
+lxml>=4.9.0  # Better HTML parsing for BeautifulSoup
