@@ -15,6 +15,7 @@ import re
 from typing import Optional, List, Dict
 from deliverable1_3 import analyze_url_credibility
 from conversational_ai import ConversationalAI, Intent
+from search_engine import SearchEngine
 from urllib.parse import urlparse
 
 # Configure Streamlit page
@@ -27,6 +28,10 @@ st.set_page_config(
 # Initialize conversational AI
 if "ai" not in st.session_state:
     st.session_state.ai = ConversationalAI()
+
+# Initialize search engine
+if "search" not in st.session_state:
+    st.session_state.search = SearchEngine()
 
 # Initialize enhanced session state
 if "messages" not in st.session_state:
@@ -115,6 +120,57 @@ def format_credibility_response(result: dict, include_suggestions: bool = False)
     
     return response
 
+def format_search_results_response(search_results: List[Dict], analyzed_results: List[dict]) -> str:
+    """
+    Format search results with credibility analysis and rankings
+    """
+    if not search_results:
+        return "❌ No search results found. Try a different query."
+    
+    if not analyzed_results:
+        return "❌ Could not analyze search results."
+    
+    # Sort by credibility score
+    sorted_results = sorted(analyzed_results, key=lambda x: x.get('final_score', 0) if x.get('success') else -1, reverse=True)
+    
+    response = f"🔎 **Found {len(search_results)} sources. Here they are ranked by credibility:**\n\n"
+    
+    for i, result in enumerate(sorted_results, 1):
+        if not result.get('success'):
+            continue
+        
+        # Find original search result for title/snippet
+        search_result = next((sr for sr in search_results if sr['url'] == result['url']), None)
+        
+        emoji_map = {
+            "Poor": "🔴",
+            "Fair": "🟠",
+            "Good": "🟡",
+            "Very Good": "🟢",
+            "Excellent": "🟢"
+        }
+        emoji = emoji_map.get(result['tranche'], "⚪")
+        
+        response += f"""
+**{i}. {emoji} {result['tranche']}** (Score: {result['final_score']:.2f})
+   📰 **{search_result['title'] if search_result else 'Source'}**
+   🔗 `{result['url']}`
+   
+   • Credibility: {result['individual_scores']['credibility']:.2f}
+   • Fact-Check: {result['individual_scores']['fact_check']:.2f}
+   • Citations: {result['individual_scores']['citations']:.2f}
+
+"""
+    
+    # Add recommendations
+    high_quality = [r for r in sorted_results if r.get('success') and r['final_score'] >= 0.7]
+    if high_quality:
+        response += f"\n✅ **Recommended:** I'd suggest reading the top {min(3, len(high_quality))} sources (highest credibility)"
+    else:
+        response += f"\n⚠️ **Note:** None of these sources scored highly. Consider searching for more authoritative sources."
+    
+    return response
+
 def format_comparison_response(results: List[dict]) -> str:
     """
     Format multiple URL analyses for side-by-side comparison
@@ -159,18 +215,20 @@ def format_comparison_response(results: List[dict]) -> str:
 # App Title and Description
 st.title("🔍 URL Credibility Checker AI")
 st.markdown("""
-Welcome! I'm your **intelligent credibility assistant**. I can:
+Welcome! I'm your **intelligent credibility assistant with search capabilities**. I can:
 
-🔍 **Analyze URLs** for credibility and reliability  
-📊 **Compare multiple sources** side-by-side  
-📚 **Answer questions** about credibility and fact-checking  
-💬 **Chat naturally** about information literacy  
+� **Search & Analyze** - Ask me questions and I'll find and rank credible sources  
+�🔍 **Analyze URLs** - Check credibility of any URL you provide  
+📊 **Compare Sources** - Rank multiple sources side-by-side  
+📚 **Answer Questions** - Learn about credibility and fact-checking  
+💬 **Chat Naturally** - Just talk to me like a person  
 
 **Try these:**
-- Send me a URL: `Check https://www.cdc.gov`
-- Compare sources: `Compare example.com vs nature.com`
-- Ask me: `How do you score URLs?` or `What makes a source credible?`
-- Just chat: `Hello!` or `Thanks!`
+- 🆕 **Search:** `Find credible sources about smoking`
+- 🆕 **Ask:** `Are cigarettes addictive?` (I'll search and analyze for you!)
+- Send URL: `Check https://www.cdc.gov`
+- Compare: `Compare example.com vs nature.com`
+- Learn: `How do you score URLs?`
 """)
 
 # Display chat history
@@ -199,7 +257,40 @@ if prompt := st.chat_input("Ask me anything or send me a URL to check..."):
     
     # Process based on intent
     with st.chat_message("assistant"):
-        if intent.type == 'analyze':
+        if intent.type == 'search':
+            # Search for sources and analyze them
+            response_obj = st.session_state.ai.generate_response(intent, session_context)
+            if isinstance(response_obj, dict) and response_obj.get('type') == 'search':
+                st.markdown(response_obj['message'])
+                
+                with st.spinner("🔎 Searching and analyzing sources..."):
+                    # Search for sources
+                    search_results = st.session_state.search.search_and_filter(intent.search_query, max_results=8, min_results=5)
+                    
+                    if search_results:
+                        # Analyze each URL
+                        analyzed_results = []
+                        for search_result in search_results:
+                            url = search_result['url']
+                            result = analyze_url_credibility(url)
+                            
+                            if result.get('success'):
+                                analyzed_results.append(result)
+                                st.session_state.analyzed_urls.append(result)
+                                st.session_state.session_stats['total_analyzed'] += 1
+                                
+                                if result['final_score'] >= 0.8:
+                                    st.session_state.session_stats['highly_credible'] += 1
+                        
+                        # Format and display results
+                        response = format_search_results_response(search_results, analyzed_results)
+                        st.session_state.last_analysis = analyzed_results[0] if analyzed_results else None
+                    else:
+                        response = "❌ No search results found. Try rephrasing your question."
+            else:
+                response = response_obj
+        
+        elif intent.type == 'analyze':
             # Analyze single or multiple URLs
             urls = intent.urls
             
@@ -290,7 +381,7 @@ Just ask or send me a URL!
 
 # Sidebar with enhanced info and stats
 with st.sidebar:
-    st.header("About")
+    st.header("Dean Van Tassell Chatbot credibility checker")
     st.markdown("""
     This **AI-powered chatbot** evaluates URL credibility using three key metrics:
     

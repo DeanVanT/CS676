@@ -41,11 +41,12 @@ pip install -r requirements.txt
 
 ### Running the Chatbot
 
-```powershell
-streamlit run app.py
-```
+`streamlit run app.py`
 
 The app will open in your browser at `http://localhost:8501`
+
+***Task Kill***
+`Get-NetTCPConnection -LocalPort 8501 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force}`
 
 ### Example Interactions
 

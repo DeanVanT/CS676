@@ -11,10 +11,11 @@ from dataclasses import dataclass
 @dataclass
 class Intent:
     """Represents detected user intent"""
-    type: str  # 'analyze', 'compare', 'chat', 'educate', 'greeting', 'thanks'
+    type: str  # 'analyze', 'compare', 'chat', 'educate', 'greeting', 'thanks', 'search'
     urls: List[str]
     topic: Optional[str] = None
     context: Optional[str] = None
+    search_query: Optional[str] = None  # For search intent
 
 class ConversationalAI:
     """
@@ -125,6 +126,13 @@ A credible source typically has:
             'domains': [r'(what|difference|explain).*(\.gov|\.edu|\.com|\.org|domain)', r'domain types'],
             'fake_news': [r'(spot|detect|identify|find) (fake|false) news', r'fake news', r'misinformation']
         }
+        
+        # Search trigger patterns
+        self.search_patterns = [
+            r'\b(find|search|look up|get|show me|give me).*(sources?|articles?|info|information)\b',
+            r'\b(where can i|how can i).*(find|read|learn)\b',
+            r'\bfind (credible|reliable|trustworthy) sources?\b'
+        ]
     
     def extract_urls(self, text: str) -> List[str]:
         """Extract all URLs from text"""
@@ -156,6 +164,15 @@ A credible source typically has:
         if any(re.search(pattern, message_lower) for pattern in self.thanks):
             return Intent(type='thanks', urls=urls)
         
+        # Check for search requests (before educational, as they can overlap)
+        if not urls and any(re.search(pattern, message_lower) for pattern in self.search_patterns):
+            # Extract topic from message
+            topic = message.strip('?').strip()
+            # Remove search trigger words to get clean query
+            clean_query = re.sub(r'\b(find|search|look up|get|show me|give me|where can i|how can i|credible|reliable|trustworthy|sources?|articles?)\b', '', message_lower, flags=re.IGNORECASE)
+            clean_query = clean_query.strip()
+            return Intent(type='search', urls=[], search_query=clean_query or message, topic=message)
+        
         # Check for educational queries
         for topic, patterns in self.educate_keywords.items():
             if any(re.search(pattern, message_lower) for pattern in patterns):
@@ -175,15 +192,14 @@ A credible source typically has:
             if any(re.search(pattern, message_lower) for pattern in follow_up_patterns):
                 return Intent(type='followup', urls=[], context='explain_last')
         
-        # Check if asking question without URL (offer to find sources)
+        # Check if asking question without URL (automatically search)
         question_patterns = [
-            r'\b(what|who|when|where|why|how|is|are|do|does|can|tell me about)\b',
+            r'\b(what|who|when|where|why|how|is|are|do|does|can|should|will|would)\b',
             r'\?$'
         ]
         if not urls and any(re.search(pattern, message_lower) for pattern in question_patterns):
-            # Extract topic
-            topic = message.strip('?').strip()
-            return Intent(type='chat', urls=[], topic=topic)
+            # Automatically trigger search for questions
+            return Intent(type='search', urls=[], search_query=message, topic=message.strip('?').strip())
         
         # If URLs present, analyze them
         if urls:
@@ -197,18 +213,32 @@ A credible source typically has:
         
         if intent.type == 'greeting':
             return """
-👋 **Hello! I'm the URL Credibility Checker.**
+👋 **Hello! I'm the URL Credibility Checker AI!**
 
 I can help you:
 • 🔍 Analyze the credibility of any URL
-• 📊 Compare multiple sources
+• � **Search and find credible sources on any topic**
+• �📊 Compare multiple sources
 • 📚 Teach you about identifying credible information
 • 💬 Answer questions about my methodology
 
-**Just send me a URL to get started!**
-
-*Example: "Check https://www.nature.com"*
+**Try these:**
+- Send me a URL: `Check https://www.nature.com`
+- **Search for sources:** `Find credible sources about nutrition`
+- Compare: `Compare cdc.gov vs example.com`
+- Learn: `How do you score URLs?`
             """
+        
+        elif intent.type == 'search':
+            return {
+                'type': 'search',
+                'query': intent.search_query,
+                'message': f"""
+🔎 **Searching for credible sources about:** _{intent.topic}_
+
+I'll find relevant sources and rank them by credibility...
+                """
+            }
         
         elif intent.type == 'thanks':
             responses = [
@@ -224,18 +254,17 @@ I can help you:
             return self.knowledge_base.get(topic, "I don't have information on that topic yet. Try asking about methodology, credibility, domains, or fake news detection.")
         
         elif intent.type == 'chat':
-            topic = intent.topic or "your question"
-            return f"""
-💬 That's an interesting question about **{topic}**!
+            # Generic chat response
+            return """
+💬 I'm here to help you evaluate source credibility!
 
-While I'm specialized in analyzing URL credibility, I'd love to help you find reliable sources on this topic.
+**I can:**
+• 🔍 Analyze any URL's credibility
+• 🔎 Search for credible sources on any topic
+• 📊 Compare multiple sources
+• 📚 Explain my methodology
 
-**Would you like me to:**
-1. Check the credibility of any sources you're considering?
-2. Learn about what makes sources credible?
-3. Understand how to spot misinformation?
-
-Just send me a URL or ask me about my methodology!
+Try asking a question or send me a URL!
             """
         
         elif intent.type == 'followup':
