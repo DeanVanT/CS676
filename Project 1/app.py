@@ -268,6 +268,9 @@ if prompt := st.chat_input("Ask me anything or send me a URL to check..."):
                     search_results = st.session_state.search.search_and_filter(intent.search_query, max_results=8, min_results=5)
                     
                     if search_results:
+                        # Clear previous search results to prevent stale data
+                        st.session_state.analyzed_urls = []
+                        
                         # Analyze each URL
                         analyzed_results = []
                         for search_result in search_results:
@@ -398,10 +401,11 @@ with st.sidebar:
     - Validates DOI presence
     
     **Score Ranges:**
-    - 🟢 0.80-1.00: Excellent/Very Good
-    - 🟡 0.60-0.79: Good
-    - 🟠 0.40-0.59: Fair
-    - 🔴 0.00-0.39: Poor
+    - 🟢 0.80-1.00: Excellent
+    - 🟢 0.60-0.79: Very Good
+    - 🟡 0.40-0.59: Good
+    - 🟠 0.20-0.39: Fair
+    - 🔴 0.00-0.19: Poor
     """)
     
     # Session statistics
